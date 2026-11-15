@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Battle of Agents Pro — TDM</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0b0e12;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#eef2f7}
+  #c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #hud{position:absolute;inset:0;pointer-events:none;font-size:3.2vmin}
+
+  /* ---------- top bar ---------- */
+  #topbar{position:absolute;top:0;left:0;right:0;height:13vmin;
+    display:flex;align-items:flex-start;justify-content:space-between;padding:1.6vmin 2vmin}
+  #scoreline{display:flex;align-items:center;gap:1.4vmin;background:rgba(10,14,20,.62);
+    border:1px solid rgba(255,255,255,.14);border-radius:1vmin;padding:.7vmin 1.6vmin;
+    font-weight:800;letter-spacing:.08em;font-size:2.6vmin}
+  #scoreline .a{color:#4fd2ff}#scoreline .b{color:#ff9a4d}
+  #scoreline b{font-size:3.6vmin;min-width:4vmin;text-align:center}
+  #scoreline i{opacity:.35;font-style:normal}
+  #timer{margin-top:.6vmin;background:rgba(10,14,20,.62);border:1px solid rgba(255,255,255,.14);
+    border-radius:.8vmin;padding:.4vmin 1.2vmin;font-size:2.4vmin;font-weight:700;letter-spacing:.06em}
+
+  #compass{position:absolute;top:1.4vmin;left:50%;transform:translateX(-50%);width:52vmin;height:4.2vmin;
+    overflow:hidden;background:linear-gradient(90deg,rgba(10,14,20,0),rgba(10,14,20,.55) 18%,rgba(10,14,20,.55) 82%,rgba(10,14,20,0));
+    border-top:1px solid rgba(255,255,255,.16);border-bottom:1px solid rgba(255,255,255,.16)}
+  #compassStrip{position:absolute;top:0;left:0;height:100%;white-space:nowrap;will-change:transform}
+  #compassStrip span{position:absolute;top:.5vmin;font-size:2.1vmin;font-weight:700;color:rgba(255,255,255,.62);
+    transform:translateX(-50%)}
+  #compassStrip span.major{color:#fff;font-size:2.5vmin}
+  #compassMark{position:absolute;left:50%;bottom:0;width:0;height:0;transform:translateX(-50%);
+    border-left:.9vmin solid transparent;border-right:.9vmin solid transparent;border-bottom:.9vmin solid #ffce54}
+
+  /* ---------- minimap ---------- */
+  #minimapWrap{position:absolute;top:13vmin;right:2vmin;width:26vmin;height:26vmin;
+    border:1px solid rgba(255,255,255,.22);border-radius:1.2vmin;overflow:hidden;background:rgba(8,12,16,.72)}
+  #minimap{width:100%;height:100%;display:block}
+
+  /* ---------- killfeed ---------- */
+  #killfeed{position:absolute;top:1.4vmin;right:30vmin;width:44vmin;display:flex;flex-direction:column;
+    align-items:flex-end;gap:.5vmin}
+  #killfeed .kf{background:rgba(8,12,16,.72);border-left:.4vmin solid #ffce54;border-radius:.5vmin;
+    padding:.35vmin .9vmin;font-size:1.9vmin;font-weight:600;white-space:nowrap;opacity:.96}
+  #killfeed .kf.mine{border-left-color:#4fd2ff}
+  #killfeed .kf b{font-weight:800}
+  #killfeed .kf .hs{color:#ff6b6b;font-weight:800}
+
+  /* ---------- crosshair ---------- */
+  #crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:0;height:0}
+  #crosshair div{position:absolute;background:rgba(255,255,255,.92);box-shadow:0 0 2px rgba(0,0,0,.9)}
+  #crosshair .h{height:.28vmin;width:1.1vmin;top:-.14vmin}
+  #crosshair .v{width:.28vmin;height:1.1vmin;left:-.14vmin}
+  #crosshair .dot{width:.4vmin;height:.4vmin;border-radius:50%;left:-.2vmin;top:-.2vmin;opacity:.9}
+  #hitmarker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:4vmin;
+    font-weight:900;color:#fff;opacity:0;text-shadow:0 0 1vmin rgba(0,0,0,.9);transition:opacity .12s}
+  #hitmarker.kill{color:#ff4d4d}
+  #dmgDir{position:absolute;left:50%;top:50%;width:0;height:0}
+  #dmgDir div{position:absolute;left:-1vmin;top:-1vmin;width:2vmin;height:2vmin;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,60,60,.85),rgba(255,60,60,0));opacity:0}
+
+  /* ---------- vitals ---------- */
+  #vitals{position:absolute;left:2.2vmin;bottom:2.4vmin;width:50vmin}
+  #boostBar{display:flex;gap:.35vmin;height:1.5vmin;margin-bottom:.6vmin}
+  #boostBar i{flex:1;background:rgba(255,255,255,.13);border-radius:.2vmin;transition:background .2s}
+  #boostBar i.on{background:#f5c542;box-shadow:0 0 1vmin rgba(245,197,66,.5)}
+  #hpRow{display:flex;align-items:center;gap:1vmin}
+  #hpTrack{flex:1;height:2.1vmin;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);
+    border-radius:.3vmin;overflow:hidden;position:relative}
+  #hpFill{height:100%;width:100%;background:linear-gradient(90deg,#e8f4ff,#ffffff);transition:width .12s linear}
+  #hpFill.low{background:linear-gradient(90deg,#ff5252,#ff8a8a)}
+  #hpNum{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;
+    font-size:1.7vmin;font-weight:800;color:#0b0e12;letter-spacing:.04em}
+  #stances{display:flex;gap:.5vmin;margin-top:.6vmin}
+  #stances span{width:3.6vmin;height:3.6vmin;border-radius:.5vmin;background:rgba(10,14,20,.6);
+    border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;
+    font-size:1.9vmin;font-weight:800;color:rgba(255,255,255,.45)}
+  #stances span.on{background:#ffce54;color:#12161c;border-color:#ffce54}
+
+  /* ---------- ammo ---------- */
+  #ammoBox{position:absolute;right:2.4vmin;bottom:2.4vmin;text-align:right;min-width:24vmin}
+  #wname{font-size:2.1vmin;font-weight:800;letter-spacing:.1em;color:#dfe8f2;text-transform:uppercase}
+  #wskin{font-size:1.6vmin;color:#4fd2ff;font-weight:700;letter-spacing:.04em;margin-top:.2vmin}
+  #ammo{margin-top:.3vmin}
+  #ammo b{font-size:5.6vmin;font-weight:800;line-height:1}
+  #ammo b.empty{color:#ff5252}
+  #ammo span{font-size:2.5vmin;opacity:.6;font-weight:700}
+  #secondW{font-size:1.7vmin;opacity:.5;margin-top:.4vmin;font-weight:600}
+
+  /* ---------- controls ---------- */
+  #stickL{position:absolute;left:4vmin;bottom:16vmin;width:22vmin;height:22vmin;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.09),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.16);pointer-events:auto;touch-action:none}
+  #stickL .knob{position:absolute;left:50%;top:50%;width:9vmin;height:9vmin;margin:-4.5vmin 0 0 -4.5vmin;
+    border-radius:50%;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 0 2vmin rgba(0,0,0,.4)}
+  #stickL .ring{position:absolute;inset:1.6vmin;border-radius:50%;border:1px dashed rgba(255,255,255,.12)}
+  #lookZone{position:absolute;right:0;top:13vmin;width:52%;bottom:26vmin;pointer-events:auto;touch-action:none}
+  .btn{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;
+    background:rgba(18,24,32,.55);border:1.5px solid rgba(255,255,255,.26);color:#eef2f7;
+    font-weight:800;letter-spacing:.04em;pointer-events:auto;touch-action:none}
+  .btn:active,.btn.on{background:rgba(255,206,84,.85);color:#12161c;border-color:#ffce54}
+  #btnFire{right:4.5vmin;bottom:16vmin;width:20vmin;height:20vmin;font-size:2.6vmin;
+    border-color:rgba(255,120,90,.55);background:rgba(120,30,20,.42)}
+  #btnFire:active{background:rgba(255,90,60,.9);color:#fff;border-color:#ff7a4d}
+  #btnFire .ammoRing{position:absolute;inset:0;border-radius:50%;border:.5vmin solid rgba(255,120,90,.25)}
+  .small{width:9.6vmin;height:9.6vmin;font-size:1.7vmin;flex-direction:column;gap:.1vmin}
+  .small em{font-size:2.4vmin;font-style:normal;line-height:1}
+  #btnAds{right:27vmin;bottom:15vmin}
+  #btnReload{right:8vmin;bottom:38vmin}
+  #btnSwap{right:18.5vmin;bottom:38vmin}
+  #btnCrouch{right:27vmin;bottom:26vmin}
+  #btnProne{right:27vmin;bottom:37vmin}
+  #btnJump{right:4vmin;bottom:38.5vmin}
+  #btnHeal{right:37vmin;bottom:34vmin}
+  #btnHeal .badge{position:absolute;top:-.4vmin;right:-.4vmin;min-width:2.8vmin;height:2.8vmin;
+    border-radius:1.4vmin;background:#ffce54;color:#12161c;font-size:1.7vmin;display:flex;
+    align-items:center;justify-content:center;padding:0 .4vmin}
+
+  /* ---------- scope / overlays ---------- */
+  #scope{position:absolute;inset:0;opacity:0;transition:opacity .12s;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%,transparent 0,transparent 26vmin,rgba(0,0,0,.97) 27vmin)}
+  #scope .ret{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:52vmin;height:52vmin;
+    border-radius:50%;border:2px solid rgba(0,0,0,.85)}
+  #scope .ret:before,#scope .ret:after{content:"";position:absolute;background:rgba(0,0,0,.8)}
+  #scope .ret:before{left:50%;top:0;bottom:0;width:1px}
+  #scope .ret:after{top:50%;left:0;right:0;height:1px}
+  #vignette{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
+  #hurtFlash{position:absolute;inset:0;pointer-events:none;background:rgba(180,20,20,0);transition:background .25s}
+  #toast{position:absolute;left:50%;bottom:32vmin;transform:translateX(-50%);font-size:2.3vmin;font-weight:700;
+    background:rgba(10,14,20,.8);border:1px solid rgba(255,255,255,.16);border-radius:.8vmin;
+    padding:.7vmin 1.6vmin;opacity:0;transition:opacity .25s;white-space:nowrap}
+  #centerMsg{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:5vmin;font-weight:900;
+    letter-spacing:.12em;opacity:0;transition:opacity .3s;text-shadow:0 0 3vmin rgba(0,0,0,.8)}
+  #respawn{position:absolute;left:0;right:0;top:52%;text-align:center;font-size:2.6vmin;font-weight:700;
+    color:#ffce54;opacity:0;transition:opacity .2s}
+  #fpsTag{position:absolute;left:2vmin;top:14vmin;font-size:1.6vmin;color:rgba(255,255,255,.3);font-weight:600}
+  #loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:#0b0e12;gap:2vmin;z-index:20}
+  #loading .t{font-size:3.4vmin;font-weight:900;letter-spacing:.18em;color:#dfe8f2}
+  #loading .s{font-size:2vmin;color:#7f8b9b;letter-spacing:.08em}
+  #loading .bar{width:44vmin;height:.8vmin;background:rgba(255,255,255,.12);border-radius:.4vmin;overflow:hidden}
+  #loading .bar i{display:block;height:100%;width:12%;background:#4fd2ff;transition:width .3s}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div id="topbar">
+    <div>
+      <div id="scoreline"><span class="a">ALPHA</span><b id="scoreA">0</b><i>/</i><b id="scoreB">0</b><span class="b">BRAVO</span></div>
+      <div id="timer">7:00</div>
+    </div>
+  </div>
+  <div id="compass"><div id="compassStrip"></div><div id="compassMark"></div></div>
+  <div id="minimapWrap"><canvas id="minimap" width="220" height="220"></canvas></div>
+  <div id="killfeed"></div>
+  <div id="fpsTag"></div>
+
+  <div id="crosshair">
+    <div class="h" id="chL"></div><div class="h" id="chR"></div>
+    <div class="v" id="chT"></div><div class="v" id="chB"></div>
+    <div class="dot"></div>
+  </div>
+  <div id="hitmarker">✕</div>
+  <div id="dmgDir"></div>
+
+  <div id="vitals">
+    <div id="boostBar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div id="hpRow">
+      <div id="hpTrack"><div id="hpFill"></div><div id="hpNum">100</div></div>
+    </div>
+    <div id="stances">
+      <span id="stStand" class="on">▲</span><span id="stCrouch">■</span><span id="stProne">▬</span>
+    </div>
+  </div>
+
+  <div id="ammoBox">
+    <div id="wname">M416</div>
+    <div id="wskin">Glacier — White Ice</div>
+    <div id="ammo"><b id="mag">30</b><span id="resv"> / 180</span></div>
+    <div id="secondW"></div>
+  </div>
+
+  <div id="stickL"><div class="ring"></div><div class="knob"></div></div>
+  <div id="lookZone"></div>
+
+  <div id="btnFire" class="btn"><div class="ammoRing"></div>FIRE</div>
+  <div id="btnAds" class="btn small"><em>◎</em>ADS</div>
+  <div id="btnReload" class="btn small"><em>↻</em>RELOAD</div>
+  <div id="btnSwap" class="btn small"><em>⇄</em>SWAP</div>
+  <div id="btnCrouch" class="btn small"><em>▼</em>CROUCH</div>
+  <div id="btnProne" class="btn small"><em>▬</em>PRONE</div>
+  <div id="btnJump" class="btn small"><em>↑</em>JUMP</div>
+  <div id="btnHeal" class="btn small"><em>✚</em>HEAL<span class="badge" id="healCount">0</span></div>
+
+  <div id="scope"><div class="ret"></div></div>
+  <div id="vignette"></div>
+  <div id="hurtFlash"></div>
+  <div id="toast"></div>
+  <div id="centerMsg"></div>
+  <div id="respawn"></div>
+</div>
+
+<div id="loading">
+  <div class="t">BATTLE OF AGENTS PRO</div>
+  <div class="s" id="loadTxt">BUILDING ARENA…</div>
+  <div class="bar"><i id="loadBar"></i></div>
+</div>
+
+<!--THREE-->
+<!--GAME-->
+</body>
+</html>
